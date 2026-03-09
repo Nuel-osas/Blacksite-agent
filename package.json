@@ -1,0 +1,29 @@
+{
+  "name": "prototype-ai-agent-wallet",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Solana devnet agentic wallet CLI with encrypted key storage, autonomous flows, and protocol adapters.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "cli": "node dist/index.js",
+    "demo": "node dist/index.js demo:run --rounds 2",
+    "dev": "tsx src/index.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "commander": "^14.0.1",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.8.3"
+  }
+}
