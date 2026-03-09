@@ -1,16 +1,35 @@
 {
-  "name": "prototype-ai-agent-wallet",
+  "name": "solana-agent-wallet",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
-  "description": "Solana devnet agentic wallet CLI with encrypted key storage, autonomous flows, and protocol adapters.",
+  "description": "Solana devnet agentic wallet CLI — create wallets, sign transactions, transfer SOL/SPL tokens, and run autonomous agent flows. Built for AI agents.",
+  "bin": {
+    "agent-wallet": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "SKILLS.md",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "cli": "node dist/index.js",
     "demo": "node dist/index.js demo:run --rounds 2",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "prepublishOnly": "npm run build"
   },
+  "keywords": [
+    "solana",
+    "wallet",
+    "agent",
+    "ai",
+    "devnet",
+    "cli",
+    "spl-token",
+    "autonomous"
+  ],
+  "license": "MIT",
   "engines": {
     "node": ">=20"
   },

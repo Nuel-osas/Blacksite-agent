@@ -2,7 +2,7 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-export const APP_NAME = "prototype-ai-agent-wallet";
+export const APP_NAME = "agent-wallet";
 export const STORE_DIR = resolve(process.cwd(), ".agent-wallet");
 export const AGENTS_DIR = join(STORE_DIR, "agents");
 export const STATE_FILE = join(STORE_DIR, "state.json");

@@ -1,10 +1,24 @@
 import { emitKeypressEvents } from "node:readline";
 import { homedir } from "node:os";
 import OpenAI from "openai";
-
-import { createAgent, listAgents, loadAgentKeypair, loadState, getMintRecord, upsertMintRecord } from "./keystore.js";
 import { PublicKey } from "@solana/web3.js";
-import { requestAirdrop, transferSol, transferTokens, mintTokens, createTokenMint, parseSol } from "./solana.js";
+
+import {
+  createAgent,
+  listAgents,
+  loadAgentKeypair,
+  loadState,
+  getMintRecord,
+  upsertMintRecord,
+} from "./keystore.js";
+import {
+  requestAirdrop,
+  transferSol,
+  transferTokens,
+  mintTokens,
+  createTokenMint,
+  parseSol,
+} from "./solana.js";
 import { describeBalances, bootstrapDemoAgents, runDemoSimulation } from "./runtime.js";
 import { runAutonomousLoop } from "./autonomous.js";
 import { getSpendingSummary } from "./spending-policy.js";
@@ -337,18 +351,23 @@ class TerminalUI {
     const h = Math.max(16, rows());
     const innerW = w - 2;
 
-    // ── Header (4 lines) ──
+    // ── Header (3 lines) ──
     const cwd = process.cwd().replace(homedir(), "~");
     const rpc = DEFAULT_RPC_URL.replace("https://", "");
-    const statusColor = this.busy ? `${c.yellowBright}` : `${c.greenBright}`;
-    const borderChar = `${c.border}─${c.reset}`;
-    const topBorder = `${c.border}╭${"─".repeat(innerW)}╮${c.reset}`;
-    const botBorder = `${c.border}╰${"─".repeat(innerW)}╯${c.reset}`;
+    const statusColor = this.busy ? c.yellowBright : c.greenBright;
+    const statusIcon = this.busy ? "◌" : "●";
 
-    const headerLine1 = `${c.border}│${c.reset} ${c.cyanBright}${c.bold}Agent Wallet${c.reset} ${c.gray}•${c.reset} ${c.magenta}Solana Devnet${c.reset}${" ".repeat(Math.max(0, innerW - 28))}${c.border}│${c.reset}`;
-    const statusText = `${c.dim}STATUS${c.reset} ${statusColor}${this.status}${c.reset}`;
-    const headerLine2 = `${c.border}│${c.reset} ${statusText}${" ".repeat(Math.max(0, innerW - stripAnsi(statusText).length - 1))}${c.border}│${c.reset}`;
-    const headerLines = [topBorder, headerLine1, headerLine2, botBorder];
+    const leftContent = `${c.yellowBright}◆${c.reset} ${c.bold}${c.whiteBright}Agent Wallet${c.reset} ${c.border}│${c.reset} ${c.magenta}Solana Devnet${c.reset}`;
+    const rightContent = `${statusColor}${statusIcon}${c.reset} ${statusColor}${this.status}${c.reset}`;
+    const leftPlainLen = stripAnsi(leftContent).length;
+    const rightPlainLen = stripAnsi(rightContent).length;
+    const headerPad = Math.max(1, innerW - leftPlainLen - rightPlainLen);
+
+    const headerLines = [
+      `${c.border}${"─".repeat(w)}${c.reset}`,
+      ` ${leftContent}${" ".repeat(headerPad)}${rightContent} `,
+      `${c.border}${"─".repeat(w)}${c.reset}`,
+    ];
 
     // ── Activity line ──
     const activityLines: string[] = [];
@@ -401,33 +420,72 @@ class TerminalUI {
   }
 
   private buildEmptyState(width: number, maxLines: number): string[] {
-    const cardW = Math.max(44, Math.min(width, 72));
-    const innerCardW = cardW - 2;
-    const leftPad = " ".repeat(Math.max(0, Math.floor((width - cardW) / 2)));
-    const row = (content: string) => {
-      const plain = stripAnsi(content);
-      const pad = Math.max(0, innerCardW - plain.length);
-      return `${leftPad}${c.border}│${c.reset} ${content}${" ".repeat(pad)}${c.border}│${c.reset}`;
-    };
+    const cwd = process.cwd().replace(homedir(), "~");
+    const rpc = DEFAULT_RPC_URL.replace("https://", "");
+    const model = MODEL;
+    const innerW = width;
+    const leftColW = Math.max(40, Math.floor(innerW * 0.5));
+    const rightColW = Math.max(30, innerW - leftColW);
 
-    const lines = [
+    // Build left and right columns independently, then merge
+    const leftLines: string[] = [
+      `${c.yellowBright}◆${c.reset} ${c.bold}${c.whiteBright}Agent Wallet${c.reset}`,
       "",
-      `${leftPad}${c.border}╭${"─".repeat(innerCardW)}╮${c.reset}`,
-      row(`${c.cyanBright}${c.bold}Agent Wallet${c.reset}`),
-      row(""),
-      row(`${c.magentaBright}◎ ◎ ◎${c.reset}  ${c.gray}Solana Devnet${c.reset}`),
-      row(""),
-      row(`${c.dim}Try:${c.reset}  ${c.cyan}"bootstrap the demo"${c.reset}`),
-      row(`      ${c.cyan}"create agent alice"${c.reset}`),
-      row(`      ${c.cyan}"airdrop 2 SOL to treasury"${c.reset}`),
-      row(`      ${c.cyan}"show balances"${c.reset}`),
-      row(""),
-      row(`${c.dim}Type /help for commands${c.reset}`),
-      `${leftPad}${c.border}╰${"─".repeat(innerCardW)}╯${c.reset}`,
+      `  ${c.border}┌───────────┐${c.reset}`,
+      `  ${c.border}│${c.reset} ${c.green}◎${c.reset} ${c.yellow}◎${c.reset} ${c.cyan}◎${c.reset}     ${c.border}│${c.reset}`,
+      `  ${c.border}│${c.reset}  ${c.whiteBright}S O L A N A${c.reset} ${c.border}│${c.reset}`,
+      `  ${c.border}│${c.reset}   ${c.whiteBright}W A L L E T${c.reset}${c.border}│${c.reset}`,
+      `  ${c.border}└───────────┘${c.reset}`,
       "",
+      `${c.dim}Model${c.reset}    ${c.yellowBright}${model}${c.reset}`,
+      `${c.dim}Network${c.reset}  ${c.greenBright}Solana Devnet${c.reset}`,
+      `${c.dim}Path${c.reset}     ${c.white}${cwd}${c.reset}`,
+      `${c.dim}RPC${c.reset}      ${c.yellow}${rpc}${c.reset}`,
     ];
 
-    return lines.slice(0, maxLines);
+    const rightLines: string[] = [
+      `${c.bold}${c.whiteBright}Getting Started${c.reset}`,
+      "",
+      `  ${c.dim}Try${c.reset}  ${c.cyan}"bootstrap the demo"${c.reset}`,
+      `  ${c.dim}or${c.reset}   ${c.cyan}"create agent alice"${c.reset}`,
+      `  ${c.dim}or${c.reset}   ${c.cyan}"airdrop 2 SOL to treasury"${c.reset}`,
+      "",
+      `${c.bold}${c.whiteBright}Capabilities${c.reset}`,
+      "",
+      `  ${c.dim}Create wallets & transfer SOL${c.reset}`,
+      `  ${c.dim}Mint & transfer SPL tokens${c.reset}`,
+      `  ${c.dim}AI autonomous agent rounds${c.reset}`,
+      `  ${c.dim}Voice commands & spending policy${c.reset}`,
+    ];
+
+    // Merge into two-column rows inside a bordered frame
+    const contentRows = Math.max(leftLines.length, rightLines.length);
+    const framedLines: string[] = [];
+
+    framedLines.push(`${c.border}╭${"─".repeat(innerW)}╮${c.reset}`);
+
+    for (let i = 0; i < contentRows; i++) {
+      const leftRaw = leftLines[i] ?? "";
+      const rightRaw = rightLines[i] ?? "";
+      const leftPlain = stripAnsi(leftRaw);
+      const rightPlain = stripAnsi(rightRaw);
+      const leftPad = Math.max(0, leftColW - leftPlain.length);
+      const rightPad = Math.max(0, rightColW - rightPlain.length - 2);
+      framedLines.push(
+        `${c.border}│${c.reset} ${leftRaw}${" ".repeat(leftPad)}${rightRaw}${" ".repeat(rightPad)} ${c.border}│${c.reset}`,
+      );
+    }
+
+    framedLines.push(`${c.border}╰${"─".repeat(innerW)}╯${c.reset}`);
+
+    // Vertically center in the available space
+    const totalLines = framedLines.length;
+    const topPad = Math.max(0, Math.floor((maxLines - totalLines) / 2));
+    const result: string[] = [];
+    for (let i = 0; i < topPad; i++) result.push("");
+    result.push(...framedLines);
+
+    return result.slice(0, maxLines);
   }
 }
 
@@ -472,8 +530,6 @@ Key rules:
 - Do not offer unsolicited suggestions or ask "would you like me to..." — just do what was asked
 
 Current RPC: ${DEFAULT_RPC_URL}`;
-
-// ── Tool execution ────────────────────────────────────────────
 
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
   try {
