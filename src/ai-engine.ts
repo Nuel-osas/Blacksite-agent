@@ -1,8 +1,11 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import type { BalanceSnapshot } from "./types.js";
 import { getSpendingSummary } from "./spending-policy.js";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+const openrouter = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 export interface AgentDecision {
   action: "transfer_sol" | "transfer_token" | "airdrop" | "mint_tokens" | "hold" | "check_balance";
@@ -90,23 +93,27 @@ export async function getAgentDecision(
   allAgents: string[],
   roundNumber: number,
 ): Promise<AgentDecision> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: SYSTEM_PROMPT,
+  const response = await openrouter.chat.completions.create({
+    model: "openrouter/free",
+    max_tokens: 1024,
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: buildAgentContext(agentName, role, balances, allAgents, roundNumber) },
+    ],
   });
 
-  const result = await model.generateContent(
-    buildAgentContext(agentName, role, balances, allAgents, roundNumber),
-  );
-
-  const text = result.response.text();
+  const text = response.choices[0]?.message?.content ?? "";
   return JSON.parse(cleanJson(text)) as AgentDecision;
 }
 
 export async function parseVoiceIntent(transcript: string, availableAgents: string[]): Promise<AgentDecision> {
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: `You parse voice commands into Solana wallet actions. Available agents: ${availableAgents.join(", ")}.
+  const response = await openrouter.chat.completions.create({
+    model: "openrouter/free",
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "system",
+        content: `You parse voice commands into Solana wallet actions. Available agents: ${availableAgents.join(", ")}.
 
 Respond with JSON only:
 {
@@ -119,9 +126,11 @@ For transfer_sol: { "from": "<agent>", "to": "<agent>", "amount": "<sol>" }
 For airdrop: { "agent": "<agent>", "amount": "<sol>" }
 For check_balance: { "agent": "<agent>" } or {} for all
 For mint_tokens: { "alias": "<token>", "to": "<agent>", "amount": "<amount>" }`,
+      },
+      { role: "user", content: transcript },
+    ],
   });
 
-  const result = await model.generateContent(transcript);
-  const text = result.response.text();
+  const text = response.choices[0]?.message?.content ?? "";
   return JSON.parse(cleanJson(text)) as AgentDecision;
 }

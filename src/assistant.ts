@@ -15,7 +15,7 @@ import {
   getDemoPrerequisiteStatus,
   runDemoSimulation,
 } from "./runtime.js";
-import { createTokenMint, mintTokens, parseSol, requestAirdrop, transferSol } from "./solana.js";
+import { createTokenMint, mintTokens, parseSol, requestAirdrop, transferSol, transferTokens } from "./solana.js";
 import { runAutonomousLoop } from "./autonomous.js";
 import { getSpendingSummary } from "./spending-policy.js";
 
@@ -130,6 +130,37 @@ async function runIntent(text: string): Promise<unknown> {
     case "simulate": {
       return runDemoSimulation(intent.rounds);
     }
+    case "transfer-token": {
+      const mint = await getMintRecord(intent.alias);
+      if (!mint) throw new Error(`Mint alias "${intent.alias}" was not found.`);
+      const sender = await loadAgentKeypair(intent.from);
+      const recip = await loadAgentKeypair(intent.to);
+      const sig = await transferTokens(sender.keypair, mint.address, recip.keypair.publicKey, intent.amount);
+      return { intent, signature: sig };
+    }
+    case "create-agent": {
+      const record = await createAgent(intent.name, intent.role);
+      return record;
+    }
+    case "list-agents": {
+      return listAgents();
+    }
+    case "balances": {
+      return describeBalances(intent.agent);
+    }
+    case "bootstrap": {
+      return bootstrapDemoAgents();
+    }
+    case "autonomous": {
+      return runAutonomousLoop(intent.rounds);
+    }
+    case "spending": {
+      const { record } = await loadAgentKeypair(intent.agent);
+      return getSpendingSummary(record.name, record.role);
+    }
+    case "state": {
+      return loadState();
+    }
     default: {
       const unreachable: never = intent;
       throw new Error(`Unhandled intent: ${JSON.stringify(unreachable)}`);
@@ -223,10 +254,9 @@ export async function handleSlashCommand(rawInput: string): Promise<ShellRespons
           outputLines: await buildFundingLines(args[0]),
         };
       case "/bootstrap": {
-        const amount = args[0] ?? "1";
-        const result = await bootstrapDemoAgents(parseSol(amount));
+        const result = await bootstrapDemoAgents();
         return {
-          summary: `Bootstrap attempted at ${amount} SOL per wallet.`,
+          summary: `Bootstrap: created demo agents.`,
           outputLines: limitLines(prettyJson(result)),
         };
       }
@@ -405,10 +435,9 @@ export async function handleConversation(message: string): Promise<ShellResponse
     }
 
     if (/(bootstrap|airdrop the wallets|fund the demo wallets)/.test(normalized)) {
-      const amount = extractFirstNumber(normalized) ?? "1";
-      const result = await bootstrapDemoAgents(parseSol(amount));
+      const result = await bootstrapDemoAgents();
       return {
-        summary: `Bootstrap attempted at ${amount} SOL per wallet.`,
+        summary: `Bootstrap: created demo agents.`,
         outputLines: limitLines(prettyJson(result)),
       };
     }

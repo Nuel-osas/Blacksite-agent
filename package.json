@@ -15,14 +15,20 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "commander": "^14.0.1",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "groq-sdk": "^0.37.0",
+    "ink": "^6.8.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "openai": "^6.27.0",
+    "react": "^19.2.4"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.14",
     "tsx": "^4.20.5",
     "typescript": "^5.8.3"
   }

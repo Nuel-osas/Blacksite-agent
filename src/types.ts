@@ -64,4 +64,12 @@ export type ParsedIntent =
   | { kind: "transfer-sol"; from: string; to: string; amountSol: string }
   | { kind: "create-mint"; authority: string; alias: string; decimals: number }
   | { kind: "mint"; authority: string; alias: string; recipient: string; amount: string }
-  | { kind: "simulate"; rounds: number };
+  | { kind: "transfer-token"; alias: string; from: string; to: string; amount: string }
+  | { kind: "simulate"; rounds: number }
+  | { kind: "create-agent"; name: string; role: string }
+  | { kind: "list-agents" }
+  | { kind: "balances"; agent?: string }
+  | { kind: "bootstrap"; airdropAmount: string }
+  | { kind: "autonomous"; rounds: number }
+  | { kind: "spending"; agent: string }
+  | { kind: "state" };

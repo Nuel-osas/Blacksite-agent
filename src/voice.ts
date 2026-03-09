@@ -1,28 +1,21 @@
-import { readFileSync } from "node:fs";
+import { createReadStream } from "node:fs";
 import { unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function transcribeAudio(audioPath: string): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-  const audioBytes = readFileSync(audioPath);
-  const base64Audio = audioBytes.toString("base64");
+  const transcription = await groq.audio.transcriptions.create({
+    file: createReadStream(audioPath),
+    model: "whisper-large-v3",
+    language: "en",
+    response_format: "text",
+  });
 
-  const result = await model.generateContent([
-    { text: "Transcribe this audio exactly. Return only the transcription text, nothing else." },
-    {
-      inlineData: {
-        mimeType: "audio/wav",
-        data: base64Audio,
-      },
-    },
-  ]);
-
-  return result.response.text().trim();
+  return (typeof transcription === "string" ? transcription : transcription.text).trim();
 }
 
 export function recordAudio(durationSeconds = 5): Promise<string> {

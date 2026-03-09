@@ -1,4 +1,6 @@
-node_modules
-dist
-.agent-wallet
+node_modules/
+dist/
+.agent-wallet/
 .env
+.DS_Store
+*.log

@@ -169,7 +169,7 @@ program
   .command("demo:bootstrap")
   .option("--airdrop <amount>", "SOL airdrop per default agent", "1")
   .action(async (options: { airdrop: string }) => {
-    const results = await bootstrapDemoAgents(parseSol(options.airdrop));
+    const results = await bootstrapDemoAgents();
     printJson({ agents: ["treasury", "trader", "observer"], results });
   });
 
@@ -186,7 +186,7 @@ program
   .option("--airdrop <amount>", "SOL airdrop per default agent", "1")
   .option("--rounds <rounds>", "number of autonomous rounds", "2")
   .action(async (options: { airdrop: string; rounds: string }) => {
-    const results = await bootstrapDemoAgents(parseSol(options.airdrop));
+    const results = await bootstrapDemoAgents();
     const result = await runDemoSimulation(Number(options.rounds));
     printJson({
       bootstrap: results,
@@ -250,6 +250,49 @@ program
       }
       case "simulate": {
         printJson(await runDemoSimulation(intent.rounds));
+        return;
+      }
+      case "transfer-token": {
+        const mint = await getMintRecord(intent.alias);
+        if (!mint) throw new Error(`Mint alias "${intent.alias}" was not found.`);
+        const sender = await loadAgentKeypair(intent.from);
+        const recipient = await loadAgentKeypair(intent.to);
+        const signature = await transferTokens(sender.keypair, mint.address, recipient.keypair.publicKey, intent.amount);
+        printJson({ intent, signature });
+        return;
+      }
+      case "create-agent": {
+        const record = await createAgent(intent.name, intent.role);
+        printJson(record);
+        return;
+      }
+      case "list-agents": {
+        const agents = await listAgents();
+        console.log(agents.map(formatAgentRow).join("\n"));
+        return;
+      }
+      case "balances": {
+        const snapshot = await describeBalances(intent.agent);
+        printJson(snapshot);
+        return;
+      }
+      case "bootstrap": {
+        const results = await bootstrapDemoAgents();
+        printJson(results);
+        return;
+      }
+      case "autonomous": {
+        const result = await runAutonomousLoop(Number(intent.rounds));
+        printJson(result);
+        return;
+      }
+      case "spending": {
+        const { record } = await loadAgentKeypair(intent.agent);
+        printJson(getSpendingSummary(record.name, record.role));
+        return;
+      }
+      case "state": {
+        printJson(await loadState());
         return;
       }
       default: {

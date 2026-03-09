@@ -71,28 +71,16 @@ export async function describeBalances(agentName?: string): Promise<BalanceSnaps
   return snapshots;
 }
 
-export async function bootstrapDemoAgents(airdropSol: number): Promise<BootstrapResult[]> {
+export async function bootstrapDemoAgents(): Promise<BootstrapResult[]> {
   await ensureDefaultAgents();
   const results: BootstrapResult[] = [];
   for (const item of DEFAULT_AGENT_ROLES) {
     const { record } = await loadAgentKeypair(item.name);
-    try {
-      const signature = await requestAirdrop(new PublicKey(record.publicKey), airdropSol);
-      results.push({
-        agent: item.name,
-        publicKey: record.publicKey,
-        airdropSol,
-        signature,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      results.push({
-        agent: item.name,
-        publicKey: record.publicKey,
-        airdropSol,
-        error: message,
-      });
-    }
+    results.push({
+      agent: item.name,
+      publicKey: record.publicKey,
+      airdropSol: 0,
+    });
   }
   return results;
 }
